@@ -13,6 +13,7 @@ module.exports.filterStudent = async function (req, res) {
     let classQuery;
     let toQuery;
     let branchQuery;
+    let genderQuery;
 
     /**
      * @forLoop there have little bit confusion
@@ -26,6 +27,8 @@ module.exports.filterStudent = async function (req, res) {
             toQuery = finalFilter[i][1]
         } else if (finalFilter[i][0] === "branch") {
             branchQuery = finalFilter[i][1]
+        } else if (finalFilter[i][0] === "gender") {
+            genderQuery = finalFilter[i][1]
         }
     }
 
@@ -37,13 +40,13 @@ module.exports.filterStudent = async function (req, res) {
         * @class & @Branch Done 
         * @class & @branch & @to done
         */
-
+        let finalResponseData = [];
         if (classQuery && !toQuery && !branchQuery) {
             console.log("Just Class Query Called !", classQuery)
             const studentByClass = await Student.find({ class: classQuery })
-            // console.log(studentByClass)
+
             if (studentByClass.length > 0) {
-                res.status(200).json({ length: studentByClass.length, payload: studentByClass })
+                finalResponseData.push(...studentByClass)
             } else {
                 res.status(200).json({ message: "Student Not Found in This Class " })
             }
@@ -51,7 +54,8 @@ module.exports.filterStudent = async function (req, res) {
             console.log("Just Branch and Class Query Called", classQuery, branchQuery)
             const students = await Student.find({ $and: [{ branch: { $in: branchQuery } }, { class: { $in: classQuery } }] })
             if (students.length > 0) {
-                res.status(200).json({ len: students.length, payload: students })
+                // res.status(200).json({ len: students.length, payload: students })
+                finalResponseData.push(...students)
             } else {
                 res.status(200).json({ message: "Student Not Found" })
             }
@@ -100,7 +104,8 @@ module.exports.filterStudent = async function (req, res) {
             }
 
             if (responseArray.length > 0) {
-                res.status(200).json({ len: responseArray.length, payload: responseArray })
+                // res.status(200).json({ len: responseArray.length, payload: responseArray })
+                finalResponseData.push(...responseArray)
             } else {
                 res.status(404).json({ message: "Student No Found !" })
             }
@@ -122,16 +127,6 @@ module.exports.filterStudent = async function (req, res) {
             let finalStudent = []
             let finalStudentsArray = []
 
-            // -1 is for replace while loop
-            // for (start - 1; start <= end; start++) {
-            //     const students = await Student.find({ class: start })
-            //     if (students) {
-            //         finalStudent.push(students)
-            //     } else {
-            //         console.log('Student not found in class ', start)
-            //     }
-            // }
-
             while (start <= end) {
                 const students = await Student.find({ class: start })
                 if (students) {
@@ -151,7 +146,8 @@ module.exports.filterStudent = async function (req, res) {
                 }
             }
             if (finalStudentsArray.length > 0) {
-                res.status(200).json({ len: finalStudentsArray.length, payload: finalStudentsArray })
+                // res.status(200).json({ len: finalStudentsArray.length, payload: finalStudentsArray })
+                finalResponseData.push(...finalStudentsArray)
             } else {
 
                 res.status(404).json({ message: "Student not Found" })
@@ -160,6 +156,21 @@ module.exports.filterStudent = async function (req, res) {
             res.status(200).json({ message: "This Search is not meaningfull !" })
         }
 
+        let finalResponseWithGender = [];
+        if (genderQuery) {
+            for (let data of finalResponseData) {
+                if (data.gender === genderQuery) {
+                    finalResponseWithGender.push(data)
+                }
+            }
+            if (finalResponseWithGender.length > 0) {
+                res.status(200).json({ len: finalResponseWithGender.length, payload: finalResponseWithGender })
+            } else {
+                res.status(404).json({ message: 'Student Not Found' })
+            }
+        } else {
+            res.status(200).json({ len: finalResponseData.length, payload: finalResponseData })
+        }
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
